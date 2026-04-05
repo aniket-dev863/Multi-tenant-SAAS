@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}Inventory{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="h4 mb-0">Medicine Inventory</h2>
+    <a href="{{ url_for('add_medicine') }}" class="btn btn-primary">
+        <i class="bi bi-plus-lg"></i> Add New
+    </a>
+</div>
+
+<div class="card shadow-sm border-0">
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th scope="col">ID</th>
+                    <th scope="col">Name</th>
+                    <th scope="col">Category</th>
+                    <th scope="col">Manufacturer</th>
+                    <th scope="col">Supplier</th>
+                    <th scope="col">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for med in medicines %}
+                <tr>
+                    <td>#{{ med[0] }}</td>
+                    <td class="fw-bold">{{ med[1] }}</td>
+                    <td><span class="badge bg-secondary-subtle text-secondary-emphasis">{{ med[2] }}</span></td>
+                    <td>{{ med[3] }}</td>
+                    <td>{{ med[4] }}</td>
+                    <td>
+                        <a href="{{ url_for('medicine_details', med_id=med[0]) }}" class="btn btn-sm btn-outline-info">
+                            <i class="bi bi-eye-fill"></i> View
+                        </a>
+                        <a href="{{ url_for('add_batch', med_id=med[0]) }}" class="btn btn-sm btn-outline-warning">
+                            <i class="bi bi-plus-lg"></i> Stock
+                        </a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" class="text-center p-4 text-muted">No medicines found in inventory.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}Sale Complete{% endblock %}
+
+{% block content %}
+<div class="container text-center">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-lg">
+                <div class="card-body p-5">
+                    <h1 class="text-success mb-4">Sale Complete!</h1>
+                    <p class="lead">Sale ID: <strong>#{{ sale_id }}</strong></p>
+                    <p>A new sale for <strong>{{ customer_name }}</strong> totaling <strong>₹{{ "%.2f"|format(total)
+                            }}</strong> has been recorded.</p>
+
+                    <h5 class="mt-4">Items Sold:</h5>
+                    <ul class="list-group list-group-flush text-start mb-4">
+                        {% for item in items %}
+                        <li class="list-group-item">{{ item.med_name }} (x{{ item.quantity }})</li>
+                        {% endfor %}
+                    </ul>
+
+                    <a href="{{ url_for('new_sale') }}" class="btn btn-success btn-lg me-2">Start New Sale</a>
+                    <a href="{{ url_for('dashboard') }}" class="btn btn-secondary btn-lg">Back to Dashboard</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}Add Batch{% endblock %}
+
+{% block content %}
+<h2>Add Stock Batch</h2>
+<p class="lead">Adding stock for Medicine ID: <strong>#{{ med_id }}</strong></p>
+
+<div class="card col-md-6">
+    <div class="card-body">
+        <form method="POST">
+            <div class="mb-3">
+                <label class="form-label">Batch Code *</label>
+                <input type="text" name="batch_code" class="form-control" placeholder="e.g., BATCH-001" required>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Expiry Date *</label>
+                <input type="date" name="expiry_date" class="form-control" required>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label class="form-label">Quantity *</label>
+                    <input type="number" name="quantity" class="form-control" min="1" required>
+                </div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label class="form-label">Buy Price (₹) *</label>
+                    <input type="number" name="buy_price" class="form-control" step="0.01" min="0" required>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Sell Price (₹) *</label>
+                    <input type="number" name="sell_price" class="form-control" step="0.01" min="0" required>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-warning">Save Batch</button>
+            <a href="{{ url_for('view_medicines') }}" class="btn btn-secondary">Cancel</a>
+        </form>
+    </div>
+</div>
+{% endblock %}

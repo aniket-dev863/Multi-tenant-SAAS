@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+
+{% block title %}New Sale{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Left Column: Available Items -->
+    <div class="col-md-8">
+        <h2 class="h4 mb-3">Available Stock (POS)</h2>
+        <div class="card shadow-sm border-0">
+            <div class="card-body p-0">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th scope="col">Medicine</th>
+                            <th scope="col">Batch</th>
+                            <th scope="col" class="text-center">Stock</th>
+                            <th scope="col" class="text-end">Price</th>
+                            <th scope="col" style="width: 80px;">Qty</th>
+                            <th scope="col" style="width: 100px;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Loop through available batches -->
+                        {% for item in available_batches %}
+                        <form method="POST" action="{{ url_for('add_to_cart') }}">
+                            <!-- Hidden fields to pass data -->
+                            <input type="hidden" name="batch_id" value="{{ item[0] }}">
+                            <input type="hidden" name="med_name" value="{{ item[1] }}">
+                            <input type="hidden" name="batch_code" value="{{ item[2] }}">
+                            <input type="hidden" name="sell_price" value="{{ item[5] }}">
+                            <input type="hidden" name="max_qty" value="{{ item[4] }}">
+                            <tr>
+                                <td>
+                                    <strong>{{ item[1] }}</strong><br>
+                                    <small class="text-muted">Expires: {{ item[3] }}</small>
+                                </td>
+                                <td>{{ item[2] }}</td>
+                                <td class="text-center">{{ item[4] }}</td>
+                                <td class="text-end fw-bold text-success">₹{{ "%.2f"|format(item[5]) }}</td>
+                                <td>
+                                    <input type="number" name="quantity" class="form-control form-control-sm" value="1"
+                                        min="1" max="{{ item[4] }}" required>
+                                </td>
+                                <td class="text-center">
+                                    <button type="submit" class="btn btn-sm btn-primary">
+                                        <i class="bi bi-cart-plus-fill"></i> Add
+                                    </button>
+                                </td>
+                            </tr>
+                        </form>
+                        {% else %}
+                        <tr>
+                            <td colspan="7" class="text-center p-4 text-muted">No stock available to sell.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Column: Cart -->
+    <div class="col-md-4">
+        <h2 class="h4 mb-3">Current Sale</h2>
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-light border-0">
+                <h5 class="mb-0">Cart</h5>
+            </div>
+            <ul class="list-group list-group-flush">
+                {% if cart_items %}
+                {% for item in cart_items %}
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>{{ item.med_name }}</strong> ({{ item.batch_code }})
+                        <br>
+                        <small>{{ item.quantity }} x ₹{{ "%.2f"|format(item.sell_price) }} = <span class="fw-bold">₹{{
+                                "%.2f"|format(item.quantity * item.sell_price) }}</span></small>
+                    </div>
+                    <a href="{{ url_for('remove_from_cart', batch_id=item.batch_id) }}" class="btn-close"
+                        aria-label="Remove"></a>
+                </li>
+                {% endfor %}
+                {% else %}
+                <li class="list-group-item p-4 text-center text-muted">Cart is empty.</li>
+                {% endif %}
+            </ul>
+            <div class="card-footer p-3">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="mb-0">Total:</h5>
+                    <h4 class="mb-0 fw-bold text-success">₹{{ "%.2f"|format(cart_total) }}</h4>
+                </div>
+
+                <hr>
+
+                <form method="POST" action="{{ url_for('checkout') }}">
+                    <div class="mb-3">
+                        <label class="form-label small">Customer Name</label>
+                        <input type="text" name="customer_name" class="form-control" placeholder="Walk-in Customer">
+                    </div>
+                    <button type="submit" class="btn btn-lg btn-success w-100" {% if not cart_items %}disabled{% endif
+                        %}>
+                        <i class="bi bi-check-circle-fill"></i> Checkout
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block title %}Add Medicine{% endblock %}
+
+{% block content %}
+<h2 class="h4 mb-3">Add New Medicine</h2>
+
+<div class="card shadow-sm border-0">
+    <form method="POST">
+        <div class="card-body">
+            <!-- Core Details Section -->
+            <h5 class="text-primary">Core Details (SQL)</h5>
+            <p class="text-muted small">This data is stored in the main relational database (PostgreSQL).</p>
+            <hr>
+
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label class="form-label">Medicine Name *</label>
+                    <input type="text" name="name" class="form-control" required>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Generic Name</label>
+                    <input type="text" name="generic_name" class="form-control">
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <label class="form-label">Category</label>
+                    <select name="category" class="form-select">
+                        <option value="Tablet">Tablet</option>
+                        <option value="Syrup">Syrup</option>
+                        <option value="Injection">Injection</option>
+                        <option value="Cream">Cream</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Manufacturer</label>
+                    <input type="text" name="manufacturer" class="form-control">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Supplier *</label>
+                    <select name="supplier_id" class="form-select" required>
+                        <option value="">-- Select Supplier --</option>
+                        {% for supplier in suppliers %}
+                        <option value="{{ supplier[0] }}">{{ supplier[1] }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <!-- Extended Details Section -->
+            <h5 class="text-success mt-5">Extended Details (NoSQL)</h5>
+            <p class="text-muted small">This flexible data is stored in a separate document database (MongoDB).</p>
+            <hr>
+
+            <div class="mb-3">
+                <label class="form-label">Description / Usage</label>
+                <textarea name="description" class="form-control" rows="2"
+                    placeholder="e.g., For relief of fever and mild pain..."></textarea>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Side Effects</label>
+                <input type="text" name="side_effects" class="form-control"
+                    placeholder="e.g., Dizziness, Nausea, Skin rash...">
+            </div>
+        </div>
+
+        <div class="card-footer bg-light text-end">
+            <a href="{{ url_for('view_medicines') }}" class="btn btn-outline-secondary">Cancel</a>
+            <button type="submit" class="btn btn-primary">Save Medicine</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,303 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+
+<!-- ### Row 1: Stat Cards ### -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card stat-card">
+            <div class="card-body">
+                <div class="stat-icon icon-blue"><i class="bi bi-cash-coin"></i></div>
+                <div>
+                    <h6>Today's Revenue</h6>
+                    <span class="stat-number">₹{{ "%.2f"|format(revenue_today) }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card">
+            <div class="card-body">
+                <div class="stat-icon icon-green"><i class="bi bi-cart-check-fill"></i></div>
+                <div>
+                    <h6>Today's Sales</h6>
+                    <span class="stat-number">{{ sales_today }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card">
+            <div class="card-body">
+                <div class="stat-icon icon-yellow"><i class="bi bi-archive-fill"></i></div>
+                <div>
+                    <h6>Total Medicines</h6>
+                    <span class="stat-number">{{ total_medicines }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card">
+            <div class="card-body">
+                <div class="stat-icon icon-red"><i class="bi bi-truck"></i></div>
+                <div>
+                    <h6>Total Suppliers</h6>
+                    <span class="stat-number">{{ total_suppliers }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ### Row 2: Top Selling & Expiring Soon ### -->
+<div class="row">
+    <!-- Top Selling Medicines -->
+    <div class="col-md-5 mb-4">
+        <div class="card dashboard-table h-100">
+            <div class="card-header">
+                <h5>Top Selling Medicines</h5>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Medicine</th>
+                            <th class="text-end">Revenue</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for med in top_medicines %}
+                        <tr>
+                            <td class="fw-bold">{{ med[0] }}</td>
+                            <td class="text-end text-success fw-bold">₹{{ "%.2f"|format(med[1]) }}</td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="2" class="text-center p-3 text-muted">No sales data yet.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Expiring List -->
+    <div class="col-md-7 mb-4">
+        <div class="card dashboard-table h-100">
+            <div class="card-header">
+                <h5>Expiring Soon (30 Days)</h5>
+                <a href="{{ url_for('view_medicines') }}" class="btn btn-sm btn-outline-primary">See All</a>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Medicine</th>
+                            <th>Batch</th>
+                            <th>Expires</th>
+                            <th>Qty</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in expiring_items %}
+                        <tr>
+                            <td class="fw-bold">{{ item[0] }}</td>
+                            <td>{{ item[1] }}</td>
+                            <td><span class="badge bg-danger-subtle text-danger">{{ item[2] }}</span></td>
+                            <td>{{ item[3] }}</td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="4" class="text-center p-3 text-muted">No items expiring soon.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ### Row 3: Recent Sales Table ### -->
+<div class="row">
+    <div class="col-12 mb-4">
+        <div class="card dashboard-table h-100">
+            <div class="card-header">
+                <h5>Recent Sales</h5>
+                <a href="#" class="btn btn-sm btn-outline-primary">See All</a>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Sale ID</th>
+                            <th>Customer</th>
+                            <th>Total</th>
+                            <th>Cashier</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for sale in recent_sales %}
+                        <tr>
+                            <td>#{{ sale[0] }}</td>
+                            <td>{{ sale[1] or 'Walk-in' }}</td>
+                            <td class="text-success fw-bold">₹{{ "%.2f"|format(sale[2]) }}</td>
+                            <td><small class="text-muted">{{ sale[3] }}</small></td>
+                            <td><small class="text-muted">{{ sale[4].strftime('%Y-%m-%d %H:%M') }}</small></td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="5" class="text-center p-3 text-muted">No sales recorded yet.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- ### Row 4: Charts ### -->
+<div class="row">
+    <!-- Monthly Progress Bar Chart -->
+    <div class="col-md-8 mb-4">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-header bg-light border-0">
+                <h5 class="mb-0">Monthly Progress (This Year)</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="monthlySalesChart"></canvas>
+            </div>
+        </div>
+    </div>
+    <!-- Today's Report Donut Chart -->
+    <div class="col-md-4 mb-4">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-header bg-light border-0">
+                <h5 class="mb-0">Today's Report</h5>
+            </div>
+            <div class="card-body d-flex align-items-center justify-content-center">
+                <canvas id="dailyRevenueChart" style="max-height: 250px;"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ### CHART.JS SCRIPT ### -->
+<script>
+    // Wait for the DOM to be fully loaded before running chart logic
+    document.addEventListener('DOMContentLoaded', () => {
+
+        // --- 1. Monthly Sales Bar Chart ---
+        const monthlyCtx = document.getElementById('monthlySalesChart').getContext('2d');
+        let monthlyChart; // To hold the chart instance
+
+        // Fetch data from our new API endpoint
+        fetch('/api/monthly_sales')
+            .then(response => response.json())
+            .then(data => {
+                // Create a full 12-month array, filling in data where we have it
+                const allMonths = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                const monthlyData = new Array(12).fill(0);
+
+                data.labels.forEach((monthName, index) => {
+                    const monthIndex = allMonths.indexOf(monthName);
+                    if (monthIndex !== -1) {
+                        monthlyData[monthIndex] = data.data[index];
+                    }
+                });
+
+                monthlyChart = new Chart(monthlyCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: allMonths,
+                        datasets: [{
+                            label: 'Total Sales (₹)',
+                            data: monthlyData,
+                            backgroundColor: 'rgba(13, 110, 253, 0.6)', // Bootstrap Primary
+                            borderColor: 'rgba(13, 110, 253, 1)',
+                            borderWidth: 1,
+                            borderRadius: 4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: function (value) { return '₹' + value; }
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    label: function (context) {
+                                        return ' Total: ₹' + context.parsed.y.toFixed(2);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            })
+            .catch(error => console.error('Error fetching monthly sales:', error));
+
+
+        // --- 2. Daily Revenue Donut Chart ---
+        const dailyCtx = document.getElementById('dailyRevenueChart').getContext('2d');
+        let dailyChart;
+
+        fetch('/api/daily_revenue_breakdown')
+            .then(response => response.json())
+            .then(data => {
+                dailyChart = new Chart(dailyCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: data.labels,
+                        datasets: [{
+                            label: 'Revenue',
+                            data: data.data,
+                            backgroundColor: [
+                                'rgba(25, 135, 84, 0.7)', // Bootstrap Success
+                                'rgba(230, 230, 230, 0.7)'  // Light Gray for goal
+                            ],
+                            borderColor: [
+                                'rgba(25, 135, 84, 1)',
+                                'rgba(200, 200, 200, 1)'
+                            ],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom'
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function (context) {
+                                        return ' ' + context.label + ': ₹' + context.parsed.toFixed(2);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            })
+            .catch(error => console.error('Error fetching daily revenue:', error));
+    });
+</script>
+
+{% endblock %}

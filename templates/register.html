@@ -1,0 +1,63 @@
+{% extends "base.html" %} {% block title %}Register{% endblock %} {% block
+content %}
+<div class="row justify-content-center">
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header">Register New User</div>
+      <div class="card-body">
+        <form method="POST" action="{{ url_for('register') }}">
+          <div class="mb-3">
+            <label for="username" class="form-label">Username</label>
+            <input
+              type="text"
+              class="form-control"
+              id="username"
+              name="username"
+              required
+            />
+          </div>
+
+          <div class="mb-3">
+            <label for="password" class="form-label">Password</label>
+            <input
+              type="password"
+              class="form-control"
+              id="password"
+              name="password"
+              required
+            />
+          </div>
+
+          <div class="mb-3">
+            <label for="pharmacy_id" class="form-label"
+              >Pharmacy Organization</label
+            >
+            <select
+              class="form-select"
+              id="pharmacy_id"
+              name="pharmacy_id"
+              required
+            >
+              <option value="" disabled selected>
+                Select your pharmacy...
+              </option>
+              {% for pharmacy in pharmacies %}
+              <option value="{{ pharmacy[0] }}">{{ pharmacy[1] }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
+            <label for="role" class="form-label">Role</label>
+            <select class="form-select" id="role" name="role">
+              <option value="pharmacist">Pharmacist</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+
+          <button type="submit" class="btn btn-primary w-100">Register</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

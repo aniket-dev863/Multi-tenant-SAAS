@@ -1,0 +1,189 @@
+/* Set the base font and background for the whole page */
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background-color: #f8f9fa;
+    display: flex;
+    min-height: 100vh;
+}
+
+/* --- Sidebar Styling --- */
+.sidebar {
+    width: 260px;
+    flex-shrink: 0;
+    background-color: #212529;
+    /* Dark background */
+    color: white;
+    padding: 1.5rem;
+    position: fixed;
+    /* Make it sticky */
+    top: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 1000;
+}
+
+.sidebar-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 2rem;
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+
+.sidebar-header .bi {
+    font-size: 2rem;
+    margin-right: 0.5rem;
+    color: #0d6efd;
+    /* Blue icon */
+}
+
+.sidebar-nav .nav-link {
+    color: #adb5bd;
+    /* Light gray text */
+    font-size: 1rem;
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+    margin-bottom: 0.25rem;
+    display: flex;
+    align-items: center;
+}
+
+.sidebar-nav .nav-link .bi {
+    margin-right: 0.75rem;
+    font-size: 1.25rem;
+}
+
+.sidebar-nav .nav-link:hover {
+    color: white;
+    background-color: #343a40;
+}
+
+/* Active link style */
+.sidebar-nav .nav-link.active {
+    color: white;
+    background-color: #0d6efd;
+    /* Blue background */
+    font-weight: 500;
+}
+
+/* --- Main Wrapper (holds top-bar and content) --- */
+.main-wrapper {
+    flex-grow: 1;
+    margin-left: 260px;
+    /* Offset by sidebar width */
+    display: flex;
+    flex-direction: column;
+}
+
+/* --- Top Bar Styling --- */
+.top-bar {
+    background-color: white;
+    border-bottom: 1px solid #dee2e6;
+    padding: 1rem 2rem;
+    height: 70px;
+    /* Fixed height */
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.top-bar .search-bar {
+    width: 300px;
+}
+
+.top-bar .user-profile {
+    display: flex;
+    align-items: center;
+}
+
+.top-bar .user-profile img {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    margin-right: 0.75rem;
+}
+
+/* --- Main Content Area --- */
+.content-area {
+    flex-grow: 1;
+    padding: 2.5rem;
+    overflow-y: auto;
+    /* Allow scrolling content */
+}
+
+/* --- Utility & Card Styling --- */
+.stat-card {
+    border: none;
+    border-radius: 0.75rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.stat-card .card-body {
+    display: flex;
+    align-items: center;
+}
+
+.stat-card .stat-icon {
+    font-size: 2.5rem;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 1.5rem;
+}
+
+.stat-card .stat-icon.icon-blue {
+    background-color: #e6f0ff;
+    color: #0d6efd;
+}
+
+.stat-card .stat-icon.icon-green {
+    background-color: #e8f5e9;
+    color: #28a745;
+}
+
+.stat-card .stat-icon.icon-yellow {
+    background-color: #fff8e1;
+    color: #ffc107;
+}
+
+.stat-card .stat-icon.icon-red {
+    background-color: #ffebee;
+    color: #dc3545;
+}
+
+.stat-card h6 {
+    color: #6c757d;
+    margin-bottom: 0.25rem;
+}
+
+.stat-card .stat-number {
+    font-size: 1.75rem;
+    font-weight: 600;
+}
+
+/* Table styling for dashboard */
+.dashboard-table .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.dashboard-table .table {
+    margin-bottom: 0;
+    /* Remove default table margin */
+}
+
+/* Flash message container */
+.flash-messages {
+    position: fixed;
+    top: 80px;
+    /* Below top-bar */
+    right: 2.5rem;
+    z-index: 1050;
+    width: 350px;
+}
