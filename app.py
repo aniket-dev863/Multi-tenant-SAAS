@@ -1,6 +1,5 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
 from bson.objectid import ObjectId
-from flask import Flask, render_template, request, redirect, url_for, flash, session
 import os
 import psycopg2
 from pymongo import MongoClient
@@ -9,7 +8,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
 
 # Load environment variables
-load_dotenv()
+db_password = os.getenv("DB_PASSWORD")
 
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY")
@@ -509,33 +508,67 @@ def add_to_cart():
     if 'cart' not in session:
         session['cart'] = []
     
+    # batch_id = request.form.get('batch_id')
+    # name = request.form.get('name')
+    # quantity = int(request.form.get('quantity'))
+    # sell_price = float(request.form.get('sell_price'))
+    
+    # cart = session['cart']
+    # cart.append({'batch_id': batch_id, 'name': name, 'quantity': quantity, 'sell_price': sell_price})
     batch_id = request.form.get('batch_id')
-    name = request.form.get('name')
+    med_name = request.form.get('med_name')
+    batch_code = request.form.get('batch_code')
     quantity = int(request.form.get('quantity'))
     sell_price = float(request.form.get('sell_price'))
-    
+
     cart = session['cart']
-    cart.append({'batch_id': batch_id, 'name': name, 'quantity': quantity, 'sell_price': sell_price})
+    cart.append({
+        'batch_id': batch_id,
+        'med_name': med_name,
+        'batch_code': batch_code,
+        'quantity': quantity,
+        'sell_price': sell_price
+    })
     session['cart'] = cart
     
-    flash(f'Added {quantity} of {name} to cart.', 'success')
+    flash(f'Added {quantity} of {med_name} to cart.', 'success')
     return redirect(url_for('new_sale'))
 
-@app.route('/remove_from_cart/<int:item_index>')
-def remove_from_cart(item_index):
+# @app.route('/remove_from_cart/<int:item_index>')
+# def remove_from_cart(item_index):
+#     if 'cart' in session:
+#         cart = session['cart']
+#         if 0 <= item_index < len(cart):
+#             cart.pop(item_index)
+#             session['cart'] = cart
+#     return redirect(url_for('new_sale'))
+@app.route('/remove_from_cart/<batch_id>')
+def remove_from_cart(batch_id):
     if 'cart' in session:
         cart = session['cart']
-        if 0 <= item_index < len(cart):
-            cart.pop(item_index)
-            session['cart'] = cart
+        cart = [item for item in cart if str(item['batch_id']) != str(batch_id)]
+        session['cart'] = cart
     return redirect(url_for('new_sale'))
 
+# @app.route('/sale_complete')
+# def sale_complete():
+#     if 'user_id' not in session: return redirect(url_for('login'))
+#     last_sale = session.get('last_sale')
+#     if not last_sale: return redirect(url_for('dashboard'))
+#     return render_template('sale_complete.html', sale=last_sale)
 @app.route('/sale_complete')
 def sale_complete():
-    if 'user_id' not in session: return redirect(url_for('login'))
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
     last_sale = session.get('last_sale')
-    if not last_sale: return redirect(url_for('dashboard'))
-    return render_template('sale_complete.html', sale=last_sale)
+    if not last_sale:
+        return redirect(url_for('dashboard'))
+    return render_template('sale_complete.html',
+        sale_id=last_sale['sale_id'],
+        customer_name=last_sale['customer_name'],
+        total=last_sale['total'],
+        items=last_sale['items']
+    )
 
 if __name__ == '__main__':
     app.run(debug=True, port=5001)
