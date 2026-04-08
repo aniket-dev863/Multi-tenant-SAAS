@@ -1,103 +1,166 @@
-{% extends "base.html" %}
+{% extends "base.html" %} {% block title %}Medicine Details{% endblock %} {%
+block content %}
 
-{% block title %}Medicine Details{% endblock %}
-
-{% block content %}
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <div>
-        <h2 class="h4 mb-0">{{ med[1] }}</h2> <!-- Name -->
-        <p class="text-muted mb-0">{{ med[2] }}</p> <!-- Generic Name -->
-    </div>
-    <a href="{{ url_for('view_medicines') }}" class="btn btn-outline-secondary">
-        <i class="bi bi-arrow-left"></i> Back to Inventory
-    </a>
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h2 class="h4 mb-1">{{ med.name }}</h2>
+    <p class="text-muted mb-0">
+      {{ med.generic_name or 'No generic name listed' }}
+    </p>
+  </div>
+  <a href="{{ url_for('view_medicines') }}" class="btn btn-outline-secondary">
+    <i class="bi bi-arrow-left"></i> Back to Inventory
+  </a>
 </div>
 
-<!-- ### Row 1: SQL and NoSQL Details ### -->
+<!-- Row 1: Core Details + Extended Details -->
 <div class="row mb-4">
-    <!-- Left Column: PostgreSQL Data -->
-    <div class="col-md-7">
-        <div class="card shadow-sm border-0 h-100">
-            <div class="card-header bg-primary-subtle border-0">
-                <h5 class="mb-0 text-primary-emphasis">Core Details (SQL)</h5>
-            </div>
-            <div class="card-body">
-                <ul class="list-group list-group-flush">
-                    <li class="list-group-item d-flex justify-content-between">
-                        <strong>Category:</strong>
-                        <span>{{ med[4] }}</span>
-                    </li>
-                    <li class="list-group-item d-flex justify-content-between">
-                        <strong>Manufacturer:</strong>
-                        <span>{{ med[5] }}</span>
-                    </li>
-                    <li class="list-group-item d-flex justify-content-between">
-                        <strong>Supplier:</strong>
-                        <span>{{ med[7] }} ({{ med[8] }})</span>
-                    </li>
-                </ul>
-            </div>
-        </div>
+  <!-- Left: PostgreSQL Data -->
+  <div class="col-md-7 mb-3">
+    <div class="card shadow-sm border-0 h-100">
+      <div class="card-header bg-primary-subtle border-0">
+        <h5 class="mb-0 text-primary-emphasis">
+          <i class="bi bi-database-fill me-2"></i>Core Details (SQL)
+        </h5>
+      </div>
+      <div class="card-body p-0">
+        <ul class="list-group list-group-flush">
+          <li
+            class="list-group-item d-flex justify-content-between align-items-center"
+          >
+            <strong>Medicine Name</strong>
+            <span>{{ med.name }}</span>
+          </li>
+          <li
+            class="list-group-item d-flex justify-content-between align-items-center"
+          >
+            <strong>Generic Name</strong>
+            <span>{{ med.generic_name or 'N/A' }}</span>
+          </li>
+          <li
+            class="list-group-item d-flex justify-content-between align-items-center"
+          >
+            <strong>Brand Name</strong>
+            <span>{{ med.brand_name or 'N/A' }}</span>
+          </li>
+          <li
+            class="list-group-item d-flex justify-content-between align-items-center"
+          >
+            <strong>Category</strong>
+            <span>
+              <span class="badge bg-secondary-subtle text-secondary-emphasis">
+                {{ med.category or 'N/A' }}
+              </span>
+            </span>
+          </li>
+          <li
+            class="list-group-item d-flex justify-content-between align-items-center"
+          >
+            <strong>Manufacturer</strong>
+            <span>{{ med.manufacturer or 'N/A' }}</span>
+          </li>
+          <li
+            class="list-group-item d-flex justify-content-between align-items-center"
+          >
+            <strong>Supplier</strong>
+            <span>{{ med.supplier_name or 'No Supplier' }}</span>
+          </li>
+          <li
+            class="list-group-item d-flex justify-content-between align-items-center"
+          >
+            <strong>Supplier Phone</strong>
+            <span>{{ med.supplier_phone or 'N/A' }}</span>
+          </li>
+        </ul>
+      </div>
     </div>
+  </div>
 
-    <!-- Right Column: MongoDB Data -->
-    <div class="col-md-5">
-        <div class="card shadow-sm border-0 h-100">
-            <div class="card-header bg-success-subtle border-0">
-                <h5 class="mb-0 text-success-emphasis">Extended Details (NoSQL)</h5>
-            </div>
-            <div class="card-body">
-                {% if details %}
-                <h6><i class="bi bi-body-text"></i> Description/Usage:</h6>
-                <p class="small">{{ details.description or 'N/A' }}</p>
+  <!-- Right: MongoDB Data -->
+  <div class="col-md-5 mb-3">
+    <div class="card shadow-sm border-0 h-100">
+      <div class="card-header bg-success-subtle border-0">
+        <h5 class="mb-0 text-success-emphasis">
+          <i class="bi bi-file-earmark-text-fill me-2"></i>Extended Details
+          (NoSQL)
+        </h5>
+      </div>
+      <div class="card-body">
+        {% if details %}
+        <h6 class="mb-1">
+          <i class="bi bi-body-text me-1"></i> Description / Usage
+        </h6>
+        <p class="small mb-3">{{ details.description or 'N/A' }}</p>
 
-                <h6 class="mt-3"><i class="bi bi-exclamation-triangle"></i> Side Effects:</h6>
-                <p class="small">{{ details.side_effects or 'None listed' }}</p>
-                {% else %}
-                <div class="alert alert-warning mb-0">
-                    No extended details found in MongoDB for this item.
-                </div>
-                {% endif %}
-            </div>
+        <hr />
+
+        <h6 class="mb-1">
+          <i class="bi bi-exclamation-triangle-fill me-1"></i> Side Effects
+        </h6>
+        <p class="small mb-0">{{ details.side_effects or 'None listed' }}</p>
+        {% else %}
+        <div class="alert alert-warning mb-0">
+          <i class="bi bi-info-circle me-2"></i>
+          No extended details found in MongoDB for this medicine.
         </div>
+        {% endif %}
+      </div>
     </div>
+  </div>
 </div>
 
-<!-- ### Row 2: Stock Batches Table ### -->
+<!-- Row 2: Stock Batches Table -->
 <div class="card shadow-sm border-0">
-    <div class="card-header d-flex justify-content-between align-items-center bg-light border-0">
-        <h5 class="mb-0">Stock Batches</h5>
-        <a href="{{ url_for('add_batch', med_id=med[0]) }}" class="btn btn-sm btn-outline-warning">
-            <i class="bi bi-plus-lg"></i> Add Stock
-        </a>
-    </div>
-    <div class="card-body p-0">
-        <table class="table table-hover mb-0">
-            <thead class="table-light">
-                <tr>
-                    <th scope="col">Batch Code</th>
-                    <th scope="col">Expiry Date</th>
-                    <th scope="col" class="text-center">Quantity</th>
-                    <th scope="col" class="text-end">Buy Price</th>
-                    <th scope="col" class="text-end">Sell Price</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for batch in batches %}
-                <tr class="{% if batch[2] < 10 %}table-warning{% endif %}"> <!-- Highlight low stock -->
-                    <td class="fw-bold">{{ batch[0] }}</td>
-                    <td>{{ batch[1] }}</td>
-                    <td class="text-center">{{ batch[2] }}</td>
-                    <td class="text-end">₹{{ "%.2f"|format(batch[3]) }}</td>
-                    <td class="text-end fw-bold text-success">₹{{ "%.2f"|format(batch[4]) }}</td>
-                </tr>
-                {% else %}
-                <tr>
-                    <td colspan="5" class="text-center p-4 text-muted">No stock available for this medicine.</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
+  <div
+    class="card-header d-flex justify-content-between align-items-center bg-light border-0"
+  >
+    <h5 class="mb-0"><i class="bi bi-boxes me-2"></i>Stock Batches</h5>
+    <a
+      href="{{ url_for('add_batch') }}?med_id={{ med.medicine_id }}"
+      class="btn btn-sm btn-outline-warning"
+    >
+      <i class="bi bi-plus-lg"></i> Add Stock
+    </a>
+  </div>
+  <div class="card-body p-0">
+    <table class="table table-hover mb-0">
+      <thead class="table-light">
+        <tr>
+          <th scope="col">Batch Code</th>
+          <th scope="col">Expiry Date</th>
+          <th scope="col" class="text-center">Quantity</th>
+          <th scope="col" class="text-end">Buy Price</th>
+          <th scope="col" class="text-end">Sell Price</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for batch in batches %}
+        <tr class="{% if batch.quantity < 10 %}table-warning{% endif %}">
+          <td class="fw-bold">{{ batch.batch_code }}</td>
+          <td>{{ batch.expiry_date }}</td>
+          <td class="text-center">
+            {% if batch.quantity < 10 %}
+            <span class="badge bg-danger-subtle text-danger">
+              {{ batch.quantity }} ⚠
+            </span>
+            {% else %} {{ batch.quantity }} {% endif %}
+          </td>
+          <td class="text-end">₹{{ "%.2f"|format(batch.buy_price) }}</td>
+          <td class="text-end fw-bold text-success">
+            ₹{{ "%.2f"|format(batch.sell_price) }}
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="5" class="text-center p-4 text-muted">
+            <i class="bi bi-inbox me-2"></i>No stock batches available for this
+            medicine.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
 </div>
+
 {% endblock %}

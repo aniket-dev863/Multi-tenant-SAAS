@@ -98,7 +98,11 @@ INSERT INTO pharmacies (name) VALUES ('City Hospital Pharmacy'), ('Apollo Care P
 -- Note: The dummy password 'admin123' below is NOT hashed. 
 -- You will not be able to log in with this dummy user using the new login route.
 -- It is recommended to register a new user via the UI to generate a valid Werkzeug hash.
-INSERT INTO users (username, password_hash, role, pharmacy_id) VALUES ('admin_city', 'admin123', 'admin', 1);
+-- Seed admin user removed. Use the /register route to create users with properly hashed passwords.
+-- To create an admin manually, run this in psql after generating a hash via Python:
+-- python3 -c "from werkzeug.security import generate_password_hash; print(generate_password_hash('your_password'))"
+-- Then: INSERT INTO users (username, password_hash, role, pharmacy_id) VALUES ('admin_city', '<paste_hash_here>', 'admin', 1);
+
 INSERT INTO suppliers (name, phone, pharmacy_id) VALUES ('HealthCorp', '9876543210', 1);
 INSERT INTO medicines (name, generic_name, category, manufacturer, supplier_id, pharmacy_id) VALUES ('Dolo 650', 'Paracetamol 650mg', 'Tablet', 'Micro Labs', 1, 1);
 INSERT INTO batches (medicine_id, batch_code, expiry_date, quantity, buy_price, sell_price) VALUES (1, 'BATCH-X99', CURRENT_DATE + INTERVAL '1 year', 100, 25.00, 30.00);

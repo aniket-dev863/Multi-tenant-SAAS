@@ -1,303 +1,446 @@
-{% extends "base.html" %}
+{% extends "base.html" %} {% block title %}Dashboard{% endblock %} {% block
+content %}
 
-{% block title %}Dashboard{% endblock %}
-
-{% block content %}
-
-<!-- ### Row 1: Stat Cards ### -->
-<div class="row mb-4">
-    <div class="col-md-3">
-        <div class="card stat-card">
-            <div class="card-body">
-                <div class="stat-icon icon-blue"><i class="bi bi-cash-coin"></i></div>
-                <div>
-                    <h6>Today's Revenue</h6>
-                    <span class="stat-number">₹{{ "%.2f"|format(revenue_today) }}</span>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card stat-card">
-            <div class="card-body">
-                <div class="stat-icon icon-green"><i class="bi bi-cart-check-fill"></i></div>
-                <div>
-                    <h6>Today's Sales</h6>
-                    <span class="stat-number">{{ sales_today }}</span>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card stat-card">
-            <div class="card-body">
-                <div class="stat-icon icon-yellow"><i class="bi bi-archive-fill"></i></div>
-                <div>
-                    <h6>Total Medicines</h6>
-                    <span class="stat-number">{{ total_medicines }}</span>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card stat-card">
-            <div class="card-body">
-                <div class="stat-icon icon-red"><i class="bi bi-truck"></i></div>
-                <div>
-                    <h6>Total Suppliers</h6>
-                    <span class="stat-number">{{ total_suppliers }}</span>
-                </div>
-            </div>
-        </div>
-    </div>
+<!-- Welcome heading — .welcome -->
+<div class="page-welcome">
+  Welcome back, {{ session.username|capitalize }}! 👋
 </div>
 
-<!-- ### Row 2: Top Selling & Expiring Soon ### -->
-<div class="row">
-    <!-- Top Selling Medicines -->
-    <div class="col-md-5 mb-4">
-        <div class="card dashboard-table h-100">
-            <div class="card-header">
-                <h5>Top Selling Medicines</h5>
-            </div>
-            <div class="card-body p-0">
-                <table class="table table-hover mb-0">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Medicine</th>
-                            <th class="text-end">Revenue</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for med in top_medicines %}
-                        <tr>
-                            <td class="fw-bold">{{ med[0] }}</td>
-                            <td class="text-end text-success fw-bold">₹{{ "%.2f"|format(med[1]) }}</td>
-                        </tr>
-                        {% else %}
-                        <tr>
-                            <td colspan="2" class="text-center p-3 text-muted">No sales data yet.</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-
-    <!-- Expiring List -->
-    <div class="col-md-7 mb-4">
-        <div class="card dashboard-table h-100">
-            <div class="card-header">
-                <h5>Expiring Soon (30 Days)</h5>
-                <a href="{{ url_for('view_medicines') }}" class="btn btn-sm btn-outline-primary">See All</a>
-            </div>
-            <div class="card-body p-0">
-                <table class="table table-hover mb-0">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Medicine</th>
-                            <th>Batch</th>
-                            <th>Expires</th>
-                            <th>Qty</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for item in expiring_items %}
-                        <tr>
-                            <td class="fw-bold">{{ item[0] }}</td>
-                            <td>{{ item[1] }}</td>
-                            <td><span class="badge bg-danger-subtle text-danger">{{ item[2] }}</span></td>
-                            <td>{{ item[3] }}</td>
-                        </tr>
-                        {% else %}
-                        <tr>
-                            <td colspan="4" class="text-center p-3 text-muted">No items expiring soon.</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
+<!-- Section header row -->
+<div class="section-header">
+  <span class="section-title">Pharmacy Sales Results</span>
+  <div class="filter-btn">
+    <svg
+      width="12"
+      height="12"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2.5"
+    >
+      <rect x="3" y="4" width="18" height="18" rx="2" />
+      <line x1="16" y1="2" x2="16" y2="6" />
+      <line x1="8" y1="2" x2="8" y2="6" />
+      <line x1="3" y1="10" x2="21" y2="10" />
+    </svg>
+    This Month
+  </div>
 </div>
 
-<!-- ### Row 3: Recent Sales Table ### -->
-<div class="row">
-    <div class="col-12 mb-4">
-        <div class="card dashboard-table h-100">
-            <div class="card-header">
-                <h5>Recent Sales</h5>
-                <a href="#" class="btn btn-sm btn-outline-primary">See All</a>
-            </div>
-            <div class="card-body p-0">
-                <table class="table table-hover mb-0">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Sale ID</th>
-                            <th>Customer</th>
-                            <th>Total</th>
-                            <th>Cashier</th>
-                            <th>Date</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for sale in recent_sales %}
-                        <tr>
-                            <td>#{{ sale[0] }}</td>
-                            <td>{{ sale[1] or 'Walk-in' }}</td>
-                            <td class="text-success fw-bold">₹{{ "%.2f"|format(sale[2]) }}</td>
-                            <td><small class="text-muted">{{ sale[3] }}</small></td>
-                            <td><small class="text-muted">{{ sale[4].strftime('%Y-%m-%d %H:%M') }}</small></td>
-                        </tr>
-                        {% else %}
-                        <tr>
-                            <td colspan="5" class="text-center p-3 text-muted">No sales recorded yet.</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
+<!-- ── Stat cards — .stat-grid ── -->
+<div class="stat-grid">
+  <!-- Card 1: Revenue — sc-green -->
+  <div class="stat-card sc-green">
+    <div class="sc-label">Today's Revenue</div>
+    <div class="sc-value">₹{{ "{:,.0f}".format(revenue_today) }}</div>
+    <div class="sc-sub">+12% this month</div>
+    <div class="sc-mini-bars">
+      <div class="mini-bar" style="height: 10px"></div>
+      <div class="mini-bar" style="height: 16px"></div>
+      <div class="mini-bar" style="height: 12px"></div>
+      <div class="mini-bar" style="height: 22px"></div>
+      <div class="mini-bar" style="height: 18px"></div>
     </div>
+  </div>
+
+  <!-- Card 2: Sales — sc-teal -->
+  <div class="stat-card sc-teal">
+    <div class="sc-label">Today's Sales</div>
+    <div class="sc-value">{{ sales_today }}</div>
+    <div class="sc-sub">+5 vs average</div>
+    <div class="sc-mini-bars">
+      <div class="mini-bar" style="height: 8px"></div>
+      <div class="mini-bar" style="height: 20px"></div>
+      <div class="mini-bar" style="height: 14px"></div>
+      <div class="mini-bar" style="height: 10px"></div>
+      <div class="mini-bar" style="height: 24px"></div>
+    </div>
+  </div>
+
+  <!-- Card 3: Medicines — sc-purple -->
+  <div class="stat-card sc-purple">
+    <div class="sc-label">Total Medicines</div>
+    <div class="sc-value">{{ total_medicines }}</div>
+    <div class="sc-sub">4 low stock alerts</div>
+    <div class="sc-mini-bars">
+      <div class="mini-bar" style="height: 12px"></div>
+      <div class="mini-bar" style="height: 18px"></div>
+      <div class="mini-bar" style="height: 22px"></div>
+      <div class="mini-bar" style="height: 14px"></div>
+      <div class="mini-bar" style="height: 20px"></div>
+    </div>
+  </div>
+
+  <!-- Card 4: Suppliers — sc-red -->
+  <div class="stat-card sc-red">
+    <div class="sc-label">Total Suppliers</div>
+    <div class="sc-value">{{ total_suppliers }}</div>
+    <div class="sc-sub">2 pending orders</div>
+    <div class="sc-mini-bars">
+      <div class="mini-bar" style="height: 8px"></div>
+      <div class="mini-bar" style="height: 14px"></div>
+      <div class="mini-bar" style="height: 10px"></div>
+      <div class="mini-bar" style="height: 18px"></div>
+      <div class="mini-bar" style="height: 12px"></div>
+    </div>
+  </div>
 </div>
 
+<!-- ── Charts row — .charts-row (1fr 1.6fr) ── -->
+<div class="charts-row">
+  <!-- Left: Donut — Sales Overview -->
+  <div class="panel">
+    <div class="panel-head">
+      <span class="panel-title">Sales Overview</span>
+    </div>
+    <div class="panel-body">
+      <!-- top legend -->
+      <div class="chart-legend">
+        <div class="legend-item">
+          <div class="legend-dot" style="background: #1d9e75"></div>
+          Revenue
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot" style="background: #a7e3c8"></div>
+          Goal
+        </div>
+      </div>
+      <!-- canvas -->
+      <div style="position: relative; width: 100%; height: 180px">
+        <canvas
+          id="donutChart"
+          role="img"
+          aria-label="Sales breakdown donut chart"
+        >
+          Sales: Purchases 28%, Suppliers 18%, Sales 42%, Other 12%.
+        </canvas>
+      </div>
+      <!-- bottom legend -->
+      <div class="chart-legend" style="margin-top: 12px; margin-bottom: 0">
+        <div class="legend-item">
+          <div class="legend-dot" style="background: #1d9e75"></div>
+          Purchases 28%
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot" style="background: #5dcaa5"></div>
+          Suppliers 18%
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot" style="background: #f0997b"></div>
+          Sales 42%
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot" style="background: #c4b5fd"></div>
+          Other 12%
+        </div>
+      </div>
+    </div>
+  </div>
 
-<!-- ### Row 4: Charts ### -->
-<div class="row">
-    <!-- Monthly Progress Bar Chart -->
-    <div class="col-md-8 mb-4">
-        <div class="card shadow-sm border-0 h-100">
-            <div class="card-header bg-light border-0">
-                <h5 class="mb-0">Monthly Progress (This Year)</h5>
-            </div>
-            <div class="card-body">
-                <canvas id="monthlySalesChart"></canvas>
-            </div>
-        </div>
+  <!-- Right: Bar — Monthly Revenue -->
+  <div class="panel">
+    <div class="panel-head">
+      <span class="panel-title">Monthly Revenue (2026)</span>
     </div>
-    <!-- Today's Report Donut Chart -->
-    <div class="col-md-4 mb-4">
-        <div class="card shadow-sm border-0 h-100">
-            <div class="card-header bg-light border-0">
-                <h5 class="mb-0">Today's Report</h5>
-            </div>
-            <div class="card-body d-flex align-items-center justify-content-center">
-                <canvas id="dailyRevenueChart" style="max-height: 250px;"></canvas>
-            </div>
-        </div>
+    <div class="panel-body">
+      <div style="position: relative; width: 100%; height: 210px">
+        <canvas
+          id="barChart"
+          role="img"
+          aria-label="Monthly revenue bar chart 2026"
+        >
+          Monthly revenue for 2026.
+        </canvas>
+      </div>
     </div>
+  </div>
 </div>
 
-<!-- ### CHART.JS SCRIPT ### -->
+<!-- ── Recent Sales — .table-section ── -->
+<div class="table-section">
+  <div class="table-head-row">
+    <span class="panel-title">Recent Sales</span>
+    <div style="display: flex; gap: 8px">
+      <a href="{{ url_for('new_sale') }}" class="filter-btn">
+        <svg
+          width="11"
+          height="11"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.5"
+        >
+          <line x1="12" y1="5" x2="12" y2="19" />
+          <line x1="5" y1="12" x2="19" y2="12" />
+        </svg>
+        New Sale
+      </a>
+    </div>
+  </div>
+
+  <table class="tbl">
+    <thead>
+      <tr>
+        <th>Customer</th>
+        <th>Sale ID</th>
+        <th>Total</th>
+        <th>Cashier</th>
+        <th>Status</th>
+        <th>Date</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% set avcls = ['av-a','av-b','av-c','av-d','av-e'] %} {% for sale in
+      recent_sales %}
+      <tr>
+        <td>
+          <div class="cust-cell">
+            <div class="cust-av {{ avcls[loop.index0 % 5] }}">
+              {{ (sale[1] or 'WI')[:2]|upper }}
+            </div>
+            {{ sale[1] or 'Walk-in' }}
+          </div>
+        </td>
+        <td style="color: #94a3b8; font-family: &quot;DM Mono&quot;, monospace">
+          #{{ sale[0] }}
+        </td>
+        <td><span class="price-val">₹{{ "%.2f"|format(sale[2]) }}</span></td>
+        <td style="color: #94a3b8">{{ sale[3] }}</td>
+        <td><span class="badge-pill bp-green">Completed</span></td>
+        <td style="color: #94a3b8; font-size: 11px">
+          {{ sale[4].strftime('%d %b, %H:%M') }}
+        </td>
+      </tr>
+      {% else %}
+      <tr>
+        <td
+          colspan="6"
+          style="text-align: center; padding: 20px; color: #94a3b8"
+        >
+          No sales recorded yet.
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <!-- Pagination -->
+  <div class="pagination">
+    <button class="pg-btn">Prev</button>
+    <button class="pg-btn active">1</button>
+    <button class="pg-btn">2</button>
+    <button class="pg-btn">...</button>
+    <button class="pg-btn">9</button>
+    <button class="pg-btn">Next</button>
+    <span class="pg-count">Showing {{ recent_sales|length }} entries</span>
+  </div>
+</div>
+
+<!-- ── Expiring Soon + Top Selling (below sales) ── -->
+<div
+  style="
+    display: grid;
+    grid-template-columns: 1.6fr 1fr;
+    gap: 12px;
+    margin-top: 20px;
+  "
+>
+  <!-- Expiring Soon -->
+  <div class="table-section">
+    <div class="table-head-row">
+      <span class="panel-title">
+        Expiring Soon
+        <span
+          style="
+            font-size: 11px;
+            font-weight: 600;
+            color: #94a3b8;
+            margin-left: 4px;
+          "
+          >(30 days)</span
+        >
+      </span>
+      <a href="{{ url_for('view_medicines') }}" class="filter-btn">See All</a>
+    </div>
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th>Medicine</th>
+          <th>Batch</th>
+          <th>Expires</th>
+          <th>Qty</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in expiring_items %}
+        <tr>
+          <td style="font-weight: 700; color: #1a3a2e">{{ item[0] }}</td>
+          <td style="color: #94a3b8">{{ item[1] }}</td>
+          <td><span class="badge-pill bp-red">{{ item[2] }}</span></td>
+          <td>{{ item[3] }}</td>
+        </tr>
+        {% else %}
+        <tr>
+          <td
+            colspan="4"
+            style="text-align: center; padding: 20px; color: #94a3b8"
+          >
+            No items expiring soon.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Top Selling -->
+  <div class="table-section">
+    <div class="table-head-row">
+      <span class="panel-title">Top Medicines</span>
+    </div>
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th>Medicine</th>
+          <th style="text-align: right">Revenue</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for med in top_medicines %}
+        <tr>
+          <td style="font-weight: 700; color: #1a3a2e">{{ med[0] }}</td>
+          <td style="text-align: right">
+            <span class="price-val">₹{{ "%.2f"|format(med[1]) }}</span>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td
+            colspan="2"
+            style="text-align: center; padding: 20px; color: #94a3b8"
+          >
+            No sales data yet.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ── Chart scripts — exact same config as preview ── -->
 <script>
-    // Wait for the DOM to be fully loaded before running chart logic
-    document.addEventListener('DOMContentLoaded', () => {
-
-        // --- 1. Monthly Sales Bar Chart ---
-        const monthlyCtx = document.getElementById('monthlySalesChart').getContext('2d');
-        let monthlyChart; // To hold the chart instance
-
-        // Fetch data from our new API endpoint
-        fetch('/api/monthly_sales')
-            .then(response => response.json())
-            .then(data => {
-                // Create a full 12-month array, filling in data where we have it
-                const allMonths = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-                const monthlyData = new Array(12).fill(0);
-
-                data.labels.forEach((monthName, index) => {
-                    const monthIndex = allMonths.indexOf(monthName);
-                    if (monthIndex !== -1) {
-                        monthlyData[monthIndex] = data.data[index];
-                    }
-                });
-
-                monthlyChart = new Chart(monthlyCtx, {
-                    type: 'bar',
-                    data: {
-                        labels: allMonths,
-                        datasets: [{
-                            label: 'Total Sales (₹)',
-                            data: monthlyData,
-                            backgroundColor: 'rgba(13, 110, 253, 0.6)', // Bootstrap Primary
-                            borderColor: 'rgba(13, 110, 253, 1)',
-                            borderWidth: 1,
-                            borderRadius: 4
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                ticks: {
-                                    callback: function (value) { return '₹' + value; }
-                                }
-                            }
-                        },
-                        plugins: {
-                            legend: { display: false },
-                            tooltip: {
-                                callbacks: {
-                                    label: function (context) {
-                                        return ' Total: ₹' + context.parsed.y.toFixed(2);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                });
-            })
-            .catch(error => console.error('Error fetching monthly sales:', error));
-
-
-        // --- 2. Daily Revenue Donut Chart ---
-        const dailyCtx = document.getElementById('dailyRevenueChart').getContext('2d');
-        let dailyChart;
-
-        fetch('/api/daily_revenue_breakdown')
-            .then(response => response.json())
-            .then(data => {
-                dailyChart = new Chart(dailyCtx, {
-                    type: 'doughnut',
-                    data: {
-                        labels: data.labels,
-                        datasets: [{
-                            label: 'Revenue',
-                            data: data.data,
-                            backgroundColor: [
-                                'rgba(25, 135, 84, 0.7)', // Bootstrap Success
-                                'rgba(230, 230, 230, 0.7)'  // Light Gray for goal
-                            ],
-                            borderColor: [
-                                'rgba(25, 135, 84, 1)',
-                                'rgba(200, 200, 200, 1)'
-                            ],
-                            borderWidth: 1
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                position: 'bottom'
-                            },
-                            tooltip: {
-                                callbacks: {
-                                    label: function (context) {
-                                        return ' ' + context.label + ': ₹' + context.parsed.toFixed(2);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                });
-            })
-            .catch(error => console.error('Error fetching daily revenue:', error));
+  document.addEventListener("DOMContentLoaded", () => {
+    /* Donut */
+    new Chart(document.getElementById("donutChart"), {
+      type: "doughnut",
+      data: {
+        labels: ["Purchases", "Suppliers", "Sales", "Other"],
+        datasets: [
+          {
+            data: [28, 18, 42, 12],
+            backgroundColor: ["#1d9e75", "#5dcaa5", "#f0997b", "#c4b5fd"],
+            borderWidth: 3,
+            borderColor: "#fff",
+            hoverOffset: 4,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: "65%",
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: "#1a3a2e",
+            titleColor: "#d4f1e6",
+            bodyColor: "#9fe1cb",
+            callbacks: { label: (c) => c.label + ": " + c.parsed + "%" },
+          },
+        },
+      },
     });
+
+    /* Bar — real data from API */
+    fetch("/api/monthly_sales")
+      .then((r) => r.json())
+      .then((data) => {
+        const allMonths = [
+          "Jan",
+          "Feb",
+          "Mar",
+          "Apr",
+          "May",
+          "Jun",
+          "Jul",
+          "Aug",
+          "Sep",
+          "Oct",
+          "Nov",
+          "Dec",
+        ];
+        const monthlyData = new Array(12).fill(0);
+        data.labels.forEach((m, i) => {
+          const idx = allMonths.indexOf(m);
+          if (idx !== -1) monthlyData[idx] = data.data[i];
+        });
+
+        new Chart(document.getElementById("barChart"), {
+          type: "bar",
+          data: {
+            labels: allMonths,
+            datasets: [
+              {
+                label: "Revenue (₹)",
+                data: monthlyData,
+                backgroundColor: (ctx) =>
+                  ctx.parsed.y > 0 ? "#1d9e75" : "#e8f5f0",
+                borderColor: (ctx) =>
+                  ctx.parsed.y > 0 ? "#0f6e56" : "#d1fae5",
+                borderWidth: 1,
+                borderRadius: 8,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                backgroundColor: "#1a3a2e",
+                titleColor: "#d4f1e6",
+                bodyColor: "#9fe1cb",
+                callbacks: {
+                  label: (c) => "₹" + c.parsed.y.toLocaleString("en-IN"),
+                },
+              },
+            },
+            scales: {
+              x: {
+                ticks: {
+                  color: "#94a3b8",
+                  font: { size: 10, family: "Nunito" },
+                },
+                grid: { color: "#f0faf6" },
+                border: { display: false },
+              },
+              y: {
+                ticks: {
+                  color: "#94a3b8",
+                  font: { size: 10 },
+                  callback: (v) => "₹" + (v / 1000).toFixed(0) + "k",
+                },
+                grid: { color: "#f0faf6" },
+                border: { display: false },
+                beginAtZero: true,
+              },
+            },
+          },
+        });
+      });
+  });
 </script>
 
 {% endblock %}

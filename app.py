@@ -2,16 +2,30 @@ from flask import Flask, render_template, request, redirect, url_for, flash, ses
 from bson.objectid import ObjectId
 import os
 import psycopg2
+import psycopg2.extras
 from pymongo import MongoClient
 from dotenv import load_dotenv
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
 
+load_dotenv();
+
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            flash('Please login first.', 'warning')
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated_function
 # Load environment variables
 db_password = os.getenv("DB_PASSWORD")
 
 app = Flask(__name__)
-app.secret_key = os.getenv("SECRET_KEY")
+secret_key = os.getenv("SECRET_KEY")
+if not secret_key:
+    raise RuntimeError("SECRET_KEY is not set in your .env file. App cannot start.")
+app.secret_key = secret_key
 
 # --- Database Connections ---
 def get_db_connection():
@@ -37,7 +51,10 @@ def register():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-        role = request.form['role']
+        role = request.form.get('role', 'pharmacist')
+        if role not in ('pharmacist',):
+            role = 'pharmacist'  # silently force safe role
+        
         # 1. NEW: Get the pharmacy organization this user belongs to
         pharmacy_id = request.form['pharmacy_id'] 
 
@@ -104,10 +121,9 @@ def login():
 
 #Dashboard Route 
 @app.route('/dashboard')
+@login_required
 def dashboard():
-    if 'user_id' not in session:
-        flash('Please login first.', 'warning')
-        return redirect(url_for('login'))
+
 
     # 1. NEW: Grab the tenant ID from the session
     pharmacy_id = session.get('pharmacy_id') 
@@ -166,9 +182,9 @@ def dashboard():
 
 #Add Supplier Route 
 @app.route('/add_supplier', methods=['GET', 'POST'])
+@login_required
 def add_supplier():
-    if 'user_id' not in session:
-        return redirect(url_for('login'))
+   
 
     pharmacy_id = session.get('pharmacy_id')
 
@@ -202,9 +218,9 @@ def add_supplier():
 
 #Add Medicine Route 
 @app.route('/add_medicine', methods=['GET', 'POST'])
+@login_required
 def add_medicine():
-    if 'user_id' not in session:
-        return redirect(url_for('login'))
+   
 
     pharmacy_id = session.get('pharmacy_id')
     conn = get_db_connection()
@@ -256,18 +272,17 @@ def add_medicine():
 
 #medicines Route 
 @app.route('/medicines')
+@login_required
 def view_medicines():
-    if 'user_id' not in session:
-        return redirect(url_for('login'))
-
+    
     pharmacy_id = session.get('pharmacy_id')
     conn = get_db_connection()
     cur = conn.cursor()
     # Filter list by pharmacy
     cur.execute("""
-        SELECT m.medicine_id, m.name, m.category, m.manufacturer, s.name 
+        SELECT m.medicine_id, m.name, m.category, m.manufacturer, COALESCE(s.name, 'No Supplier')
         FROM medicines m
-        JOIN suppliers s ON m.supplier_id = s.supplier_id
+        LEFT JOIN suppliers s ON m.supplier_id = s.supplier_id
         WHERE m.pharmacy_id = %s
         ORDER BY m.name
     """, (pharmacy_id,))
@@ -279,19 +294,20 @@ def view_medicines():
 
 
 @app.route('/medicine/<int:med_id>')
+@login_required
 def medicine_details(med_id):
-    if 'user_id' not in session:
-        return redirect(url_for('login'))
-
     pharmacy_id = session.get('pharmacy_id')
     conn = get_db_connection()
     cur = conn.cursor()
 
     # Verify the medicine belongs to this pharmacy before showing it
+    conn = get_db_connection()
+    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
     cur.execute("""
         SELECT m.*, s.name as supplier_name, s.phone as supplier_phone
         FROM medicines m
-        JOIN suppliers s ON m.supplier_id = s.supplier_id
+        LEFT JOIN suppliers s ON m.supplier_id = s.supplier_id
         WHERE m.medicine_id = %s AND m.pharmacy_id = %s
     """, (med_id, pharmacy_id))
     med_pg = cur.fetchone()
@@ -318,10 +334,8 @@ def medicine_details(med_id):
 # Note: /add_to_cart, /remove_from_cart, /sale_complete remain exactly the same as they just handle the session array.
 
 @app.route('/new_sale')
+@login_required
 def new_sale():
-    if 'user_id' not in session:
-        return redirect(url_for('login'))
-    
     pharmacy_id = session.get('pharmacy_id')
     if 'cart' not in session:
         session['cart'] = []
@@ -345,10 +359,10 @@ def new_sale():
 
 
 @app.route('/checkout', methods=['POST'])
+@login_required
 def checkout():
-    if 'user_id' not in session or 'cart' not in session or not session['cart']:
-        return redirect(url_for('new_sale'))
-
+    if 'cart' not in session or not session['cart']:
+        return redirect(url_for('new_sale'));
     pharmacy_id = session.get('pharmacy_id')
     cart = session['cart']
     customer_name = request.form.get('customer_name', 'Walk-in Customer')
@@ -398,9 +412,8 @@ def checkout():
 
 
 @app.route('/api/monthly_sales')
+@login_required
 def api_monthly_sales():
-    if 'user_id' not in session:
-        return jsonify(error="Not authorized"), 401
 
     pharmacy_id = session.get('pharmacy_id')
     conn = get_db_connection()
@@ -426,10 +439,8 @@ def api_monthly_sales():
 
 
 @app.route('/api/daily_revenue_breakdown')
+@login_required
 def api_daily_revenue_breakdown():
-    if 'user_id' not in session:
-        return jsonify(error="Not authorized"), 401
-    
     pharmacy_id = session.get('pharmacy_id')
     conn = get_db_connection()
     cur = conn.cursor()
@@ -442,8 +453,9 @@ def api_daily_revenue_breakdown():
     revenue_today = cur.fetchone()[0] or 0.0
     cur.close()
     conn.close()
-
-    data = [float(revenue_today), 5000.0]
+    daily_goal = 5000.0
+    remaining = max(0.0, daily_goal - float(revenue_today))
+    data = [float(revenue_today), remaining]
     labels = ["Today's Earning", "Remaining Goal"]
     return jsonify(labels=labels, data=data)
 
@@ -456,12 +468,10 @@ def logout():
     return redirect(url_for('login'))
 
 @app.route('/add_batch', methods=['GET', 'POST'])
+@login_required
 def add_batch():
-    if 'user_id' not in session: 
-        return redirect(url_for('login'))
-        
     pharmacy_id = session.get('pharmacy_id')
-    
+
     if request.method == 'POST':
         conn = get_db_connection()
         cur = conn.cursor()
@@ -469,6 +479,16 @@ def add_batch():
             medicine_id = request.form.get('medicine_id')
             if not medicine_id:
                 flash('You must select a medicine! If the list is empty, add a medicine first.', 'danger')
+                # Redirect back with the med_id if we have it
+                return redirect(url_for('add_batch'))
+
+            # Verify this medicine belongs to the logged-in pharmacy
+            cur.execute(
+                "SELECT medicine_id FROM medicines WHERE medicine_id = %s AND pharmacy_id = %s",
+                (medicine_id, pharmacy_id)
+            )
+            if not cur.fetchone():
+                flash('Invalid medicine selection.', 'danger')
                 return redirect(url_for('add_batch'))
 
             batch_code = request.form.get('batch_code')
@@ -476,34 +496,55 @@ def add_batch():
             quantity = int(request.form.get('quantity'))
             buy_price = float(request.form.get('buy_price'))
             sell_price = float(request.form.get('sell_price'))
-            
+
             cur.execute("""INSERT INTO batches (medicine_id, batch_code, expiry_date, quantity, buy_price, sell_price)
-                           VALUES (%s, %s, %s, %s, %s, %s)""", 
+                           VALUES (%s, %s, %s, %s, %s, %s)""",
                         (medicine_id, batch_code, expiry_date, quantity, buy_price, sell_price))
             conn.commit()
             flash('Stock/Batch added successfully!', 'success')
-            return redirect(url_for('dashboard'))
-            
+            # Redirect back to the medicine detail page if we know the med_id
+            return redirect(url_for('medicine_details', med_id=medicine_id))
+
         except ValueError:
             flash('Please make sure quantity and prices are numbers!', 'warning')
         except Exception as e:
-            conn.rollback() 
-            print(f"\n--- DB ERROR --- \n{e}\n----------------\n")
-            flash('Database error! Check your VS Code terminal.', 'danger')
+            conn.rollback()
+            print(f"\n--- DB ERROR ---\n{e}\n----------------\n")
+            flash('Database error! Check your terminal.', 'danger')
         finally:
             cur.close()
             conn.close()
-            
+
+    # GET request — pick up med_id from URL query param if coming from inventory
+    med_id = request.args.get('med_id')
+
     conn = get_db_connection()
     cur = conn.cursor()
-    cur.execute("SELECT medicine_id, name FROM medicines WHERE pharmacy_id = %s ORDER BY name", (pharmacy_id,))
+    cur.execute(
+        "SELECT medicine_id, name FROM medicines WHERE pharmacy_id = %s ORDER BY name",
+        (pharmacy_id,)
+    )
     medicines = cur.fetchall()
+
+    # If a specific medicine was pre-selected, fetch its name for display
+    selected_medicine = None
+    if med_id:
+        cur.execute(
+            "SELECT medicine_id, name FROM medicines WHERE medicine_id = %s AND pharmacy_id = %s",
+            (med_id, pharmacy_id)
+        )
+        selected_medicine = cur.fetchone()
+
     cur.close()
     conn.close()
-    
-    return render_template('add_batch.html', medicines=medicines)
+
+    return render_template('add_batch.html',
+                           medicines=medicines,
+                           med_id=med_id,
+                           selected_medicine=selected_medicine)
 
 @app.route('/add_to_cart', methods=['POST'])
+@login_required
 def add_to_cart():
     if 'cart' not in session:
         session['cart'] = []
@@ -543,6 +584,7 @@ def add_to_cart():
 #             session['cart'] = cart
 #     return redirect(url_for('new_sale'))
 @app.route('/remove_from_cart/<batch_id>')
+@login_required
 def remove_from_cart(batch_id):
     if 'cart' in session:
         cart = session['cart']
@@ -557,9 +599,8 @@ def remove_from_cart(batch_id):
 #     if not last_sale: return redirect(url_for('dashboard'))
 #     return render_template('sale_complete.html', sale=last_sale)
 @app.route('/sale_complete')
+@login_required
 def sale_complete():
-    if 'user_id' not in session:
-        return redirect(url_for('login'))
     last_sale = session.get('last_sale')
     if not last_sale:
         return redirect(url_for('dashboard'))
