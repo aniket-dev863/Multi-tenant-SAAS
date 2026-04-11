@@ -1,3 +1,6 @@
+from burn_rate import run_analysis_and_alert, calculate_burn_rates
+from apscheduler.schedulers.background import BackgroundScheduler
+import atexit
 from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
 from bson.objectid import ObjectId
 import os
@@ -8,7 +11,7 @@ from dotenv import load_dotenv
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
 
-load_dotenv();
+load_dotenv()
 
 def login_required(f):
     @wraps(f)
@@ -18,8 +21,7 @@ def login_required(f):
             return redirect(url_for('login'))
         return f(*args, **kwargs)
     return decorated_function
-# Load environment variables
-db_password = os.getenv("DB_PASSWORD")
+
 
 app = Flask(__name__)
 secret_key = os.getenv("SECRET_KEY")
@@ -38,8 +40,42 @@ def get_db_connection():
     )
     return conn
 
-mongo_client = MongoClient(os.getenv("MONGO_URI"))
-mongo_db = mongo_client.get_database()
+# REPLACE lines 44-45 with:
+try:
+    mongo_client = MongoClient(os.getenv("MONGO_URI"), serverSelectionTimeoutMS=5000)
+    mongo_client.server_info()
+    mongo_db = mongo_client.get_database()
+except Exception as e:
+    print(f"WARNING: MongoDB connection failed: {e}")
+    mongo_db = None
+
+
+# ── Daily burn rate scheduler ──
+def scheduled_burn_rate_job():
+    """Runs every day at 8am — analyses all pharmacies."""
+    try:
+        conn = get_db_connection()
+        cur  = conn.cursor()
+        cur.execute("SELECT id FROM pharmacies")
+        pharmacy_ids = [row[0] for row in cur.fetchall()]
+        cur.close()
+        conn.close()
+        for pid in pharmacy_ids:
+            run_analysis_and_alert(pid)
+            print(f"Scheduled burn rate run complete for pharmacy {pid}")
+    except Exception as e:
+        print(f"Scheduled burn rate job error: {e}")
+
+scheduler = BackgroundScheduler()
+scheduler.add_job(
+    func=scheduled_burn_rate_job,
+    trigger='cron',
+    hour=8,
+    minute=0,
+    id='daily_burn_rate'
+)
+scheduler.start()
+atexit.register(lambda: scheduler.shutdown())
 
 # --- Routes ---
 @app.route('/')
@@ -51,12 +87,11 @@ def register():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
+        email    = request.form.get('email', '')
         role = request.form.get('role', 'pharmacist')
-        if role not in ('pharmacist',):
-            role = 'pharmacist'  # silently force safe role
-        
-        # 1. NEW: Get the pharmacy organization this user belongs to
-        pharmacy_id = request.form['pharmacy_id'] 
+        if role not in ('admin', 'pharmacist'):
+            role = 'pharmacist'
+        pharmacy_id = request.form['pharmacy_id']
 
         hashed_password = generate_password_hash(password)
 
@@ -65,8 +100,8 @@ def register():
             cur = conn.cursor()
             # 2. NEW: Save the pharmacy_id into the users table
             cur.execute(
-                "INSERT INTO users (username, password_hash, role, pharmacy_id) VALUES (%s, %s, %s, %s)",
-                (username, hashed_password, role, pharmacy_id)
+                "INSERT INTO users (username, password_hash, role, pharmacy_id, email) VALUES (%s, %s, %s, %s, %s)",
+                (username, hashed_password, role, pharmacy_id, email)
             )
             conn.commit()
             cur.close()
@@ -100,7 +135,12 @@ def login():
         conn = get_db_connection()
         cur = conn.cursor()
         # 4. NEW: Select pharmacy_id from the database
-        cur.execute("SELECT user_id, username, password_hash, role, pharmacy_id FROM users WHERE username = %s", (username,))
+        cur.execute("""
+        SELECT u.user_id, u.username, u.password_hash, u.role, u.pharmacy_id, p.name
+        FROM users u
+        JOIN pharmacies p ON u.pharmacy_id = p.id
+        WHERE u.username = %s
+    """, (username,))
         user = cur.fetchone()
         cur.close()
         conn.close()
@@ -111,7 +151,8 @@ def login():
             session['role'] = user[3]
             # 5. NEW AND CRITICAL: Store the Tenant ID in the session
             session['pharmacy_id'] = user[4] 
-            
+            session['pharmacy_name'] = user[5]
+
             flash('Login successful!', 'success')
             return redirect(url_for('dashboard'))
         else:
@@ -298,10 +339,6 @@ def view_medicines():
 def medicine_details(med_id):
     pharmacy_id = session.get('pharmacy_id')
     conn = get_db_connection()
-    cur = conn.cursor()
-
-    # Verify the medicine belongs to this pharmacy before showing it
-    conn = get_db_connection()
     cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
     cur.execute("""
@@ -362,7 +399,7 @@ def new_sale():
 @login_required
 def checkout():
     if 'cart' not in session or not session['cart']:
-        return redirect(url_for('new_sale'));
+        return redirect(url_for('new_sale'))
     pharmacy_id = session.get('pharmacy_id')
     cart = session['cart']
     customer_name = request.form.get('customer_name', 'Walk-in Customer')
@@ -610,6 +647,41 @@ def sale_complete():
         total=last_sale['total'],
         items=last_sale['items']
     )
+@app.route('/burn_rate', methods=['GET', 'POST'])
+@login_required
+def burn_rate_page():
+    pharmacy_id = session.get('pharmacy_id')
+    results     = []
+    email_msg   = None
+    last_run    = None
+
+    if request.method == 'POST':
+        # Manual trigger — run analysis AND send email
+        results, email_msg = run_analysis_and_alert(pharmacy_id)
+    else:
+        # GET — just show last results from DB if they exist
+        results = calculate_burn_rates(pharmacy_id)
+
+    # Get last run time from DB
+    try:
+        conn = get_db_connection()
+        cur  = conn.cursor()
+        cur.execute("""
+            SELECT MAX(calculated_at) FROM burn_rate_log
+            WHERE pharmacy_id = %s
+        """, (pharmacy_id,))
+        row = cur.fetchone()
+        if row and row[0]:
+            last_run = row[0].strftime('%d %b %Y, %H:%M')
+        cur.close()
+        conn.close()
+    except Exception as e:
+        print(f"Error fetching last run time: {e}")
+
+    return render_template('burn_rate.html',
+                           results=results,
+                           email_msg=email_msg,
+                           last_run=last_run)
 
 if __name__ == '__main__':
     app.run(debug=True, port=5001)

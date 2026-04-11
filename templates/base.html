@@ -72,6 +72,13 @@
       <!-- MANAGE -->
       <span class="sidebar-section-label">Manage</span>
       <ul class="sidebar-nav">
+        <li>
+          <a
+            class="nav-link {% if request.endpoint == 'burn_rate_page' %}active{% endif %}"
+            href="{{ url_for('burn_rate_page') }}"
+            >Stock Alerts</a
+          >
+        </li>
         <li><a class="nav-link" href="#">Reports</a></li>
         <li><a class="nav-link" href="#">Settings</a></li>
       </ul>

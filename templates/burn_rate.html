@@ -1,0 +1,143 @@
+{% extends "base.html" %} {% block title %}Stock Alerts{% endblock %} {% block
+content %}
+
+<!-- Header row -->
+<div class="section-header mb-3">
+  <div>
+    <div class="page-welcome" style="margin-bottom: 4px">
+      Stock Burn Rate Analysis
+    </div>
+    <p style="font-size: 12px; color: #64748b; font-weight: 600; margin: 0">
+      Based on sales data from the last 30 days · Last run:
+      <strong style="color: #1a7a5e">
+        {{ last_run if last_run else 'Never' }}
+      </strong>
+    </p>
+  </div>
+
+  <form method="POST" action="{{ url_for('burn_rate_page') }}">
+    <button type="submit" class="btn btn-primary">
+      Run Now &amp; Send Alert
+    </button>
+  </form>
+</div>
+
+<!-- Email status -->
+{% if email_msg %}
+<div
+  style="
+    background: #e1f5ee;
+    border: 1px solid #a7e3c8;
+    border-radius: 10px;
+    padding: 10px 16px;
+    margin-bottom: 20px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #065f46;
+  "
+>
+  {{ email_msg }}
+</div>
+{% endif %}
+
+<!-- Summary -->
+{% if results %} {% set critical_count = results |
+selectattr('alert_level','equalto','critical') | list | length %} {% set
+warning_count = results | selectattr('alert_level','equalto','warning') | list |
+length %} {% set watch_count = results |
+selectattr('alert_level','equalto','watch') | list | length %}
+
+<div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap">
+  <span class="badge-pill bp-red">🔴 Critical: {{ critical_count }}</span>
+  <span class="badge-pill bp-amber">🟡 Warning: {{ warning_count }}</span>
+  <span class="badge-pill bp-green">🟢 Watch: {{ watch_count }}</span>
+  <span>Total medicines: {{ results | length }}</span>
+</div>
+
+{% endif %}
+
+<!-- Table -->
+<div class="table-section">
+  <div class="table-head-row">
+    <span class="panel-title">All Medicines — Burn Rate Report</span>
+    <span style="font-size: 11px; color: #94a3b8">
+      Threshold: 🔴 ≤7 days · 🟡 ≤15 days · 🟢 ≤30 days
+    </span>
+  </div>
+
+  <table class="tbl">
+    <thead>
+      <tr>
+        <th>Medicine</th>
+        <th>Current Stock</th>
+        <th>Sold (30d)</th>
+        <th>Burn Rate</th>
+        <th>Days Left</th>
+        $$
+        <th>Predicted Stockout</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      {% if results %} {% for item in results %} {% if item.alert_level ==
+      'critical' %} {% set row_bg = '#fde8e8' %} {% elif item.alert_level ==
+      'warning' %} {% set row_bg = '#fef3c7' %} {% elif item.alert_level ==
+      'watch' %} {% set row_bg = '#f0fdf4' %} {% else %} {% set row_bg =
+      '#ffffff' %} {% endif %}
+
+      <tr style="background: {{ row_bg }};">
+        <td><strong>{{ item.name }}</strong></td>
+
+        <!-- Stock -->
+        <td style="text-align: center">
+          {% if item.current_stock == 0 %}
+          <span class="badge-pill bp-red">Out of stock</span>
+          {% elif item.current_stock < 10 %}
+          <span style="color: red">{{ item.current_stock }}</span>
+          {% else %} {{ item.current_stock }} {% endif %}
+        </td>
+
+        <!-- Sold -->
+        <td style="text-align: center">{{ item.units_sold_30d or 0 }} units</td>
+
+        <!-- Burn rate -->
+        <td style="text-align: center">
+          {% if item.burn_rate_per_day and item.burn_rate_per_day > 0 %} {{
+          "%.2f"|format(item.burn_rate_per_day) }}/day {% else %}
+          <span style="color: #94a3b8">No sales</span>
+          {% endif %}
+        </td>
+
+        <!-- Days -->
+        <td style="text-align: center">
+          {% if item.days_remaining is not none %} {{ item.days_remaining }}
+          days {% else %} — {% endif %}
+        </td>
+
+        <!-- Date -->
+        <td style="text-align: center">
+          {% if item.predicted_stockout_date %} {{ item.predicted_stockout_date
+          }} {% else %} Unknown {% endif %}
+        </td>
+
+        <!-- Status -->
+        <td style="text-align: center">
+          {% if item.alert_level == 'critical' %} 🔴 Critical {% elif
+          item.alert_level == 'warning' %} 🟡 Warning {% elif item.alert_level
+          == 'watch' %} 🟢 Watch {% else %} ✓ OK {% endif %}
+        </td>
+      </tr>
+
+      {% endfor %} {% else %}
+      <tr>
+        <td colspan="7" style="text-align: center; padding: 40px">
+          No analysis run yet
+        </td>
+      </tr>
+      {% endif %}
+    </tbody>
+  </table>
+</div>
+
+{% endblock %}

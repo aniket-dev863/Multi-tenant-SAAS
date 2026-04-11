@@ -5,13 +5,14 @@ CREATE TABLE pharmacies (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 1. USERS (Modified: Added pharmacy_id)
+-- 1. USERS (Modified: Added pharmacy_id) and eamil of admin for alerts ,
 CREATE TABLE users (
     user_id SERIAL PRIMARY KEY,
     username VARCHAR(50) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
     role VARCHAR(20) NOT NULL CHECK (role IN ('admin', 'pharmacist')),
     pharmacy_id INT REFERENCES pharmacies(id) ON DELETE CASCADE,
+    email VARCHAR(150),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -71,6 +72,18 @@ CREATE TABLE sale_items (
     total_price DECIMAL(10, 2) GENERATED ALWAYS AS (quantity * price_per_unit) STORED
 );
 
+-- 7. BURN RATE LOG
+CREATE TABLE burn_rate_log (
+    log_id SERIAL PRIMARY KEY,
+    medicine_id INT REFERENCES medicines(medicine_id) ON DELETE CASCADE,
+    pharmacy_id INT REFERENCES pharmacies(id) ON DELETE CASCADE,
+    burn_rate_per_day DECIMAL(10, 4),
+    current_stock INT,
+    days_remaining DECIMAL(10, 1),
+    predicted_stockout_date DATE,
+    alert_level VARCHAR(10),
+    calculated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 -- TRIGGER FUNCTION (Unchanged)
 CREATE OR REPLACE FUNCTION update_stock_after_sale()
 RETURNS TRIGGER AS $$
