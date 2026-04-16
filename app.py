@@ -1,6 +1,8 @@
 from burn_rate import run_analysis_and_alert, calculate_burn_rates
 from apscheduler.schedulers.background import BackgroundScheduler
 import atexit
+import boto3
+import json 
 from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
 from bson.objectid import ObjectId
 import os
@@ -682,6 +684,69 @@ def burn_rate_page():
                            results=results,
                            email_msg=email_msg,
                            last_run=last_run)
+
+@app.route('/reports')
+@login_required
+def reports_page():
+    return render_template('reports.html')
+
+@app.route('/generate_pdf', methods=['POST'])
+@login_required
+def generate_pdf_report():
+    pharmacy_id = session.get('pharmacy_id')
+    pharmacy_name = session.get('pharmacy_name')
+    start_date = request.form['start_date']
+    end_date = request.form['end_date']
+
+    # 1. Gather the Tenant-Isolated Data
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT sale_date::date, customer_name, total_amount 
+        FROM sales 
+        WHERE pharmacy_id = %s AND sale_date >= %s AND sale_date <= %s
+        ORDER BY sale_date ASC
+    """, (pharmacy_id, start_date, f"{end_date} 23:59:59"))
+    
+    sales_data = cur.fetchall()
+    cur.close()
+    conn.close()
+
+    if not sales_data:
+        flash('No sales found for this date range.', 'warning')
+        return redirect(url_for('reports_page'))
+
+    # 2. Package the Data for Node.js
+    payload = {
+        "pharmacy_name": pharmacy_name,
+        "report_type": "Sales History",
+        "date_range": f"{start_date} to {end_date}",
+        "data": [{"date": str(row[0]), "customer": row[1], "amount": float(row[2])} for row in sales_data]
+    }
+
+    # 3. Invoke the Node.js Microservice
+    try:
+        # NOTE: Make sure your EC2 instance has an IAM role allowing lambda:InvokeFunction
+        client = boto3.client('lambda', region_name='ap-south-1') 
+        response = client.invoke(
+            FunctionName='StreamPulse-PDF-Generator', # The name of your Node Lambda
+            InvocationType='RequestResponse',
+            Payload=json.dumps(payload)
+        )
+        
+        # 4. Read the returned S3 Presigned URL
+        response_payload = json.loads(response['Payload'].read().decode('utf-8'))
+        body = json.loads(response_payload['body'])
+        
+        # Redirect the user's browser directly to the secure S3 download link
+        return redirect(body['download_url'])
+
+    except Exception as e:
+        print(f"Lambda Invocation Error: {e}")
+        flash('Failed to generate PDF microservice. Check logs.', 'danger')
+        return redirect(url_for('reports_page'))
+
+
 
 if __name__ == '__main__':
     app.run(debug=True, port=5001)

@@ -1,0 +1,68 @@
+{% extends "base.html" %} {% block title %}Reports{% endblock %} {% block
+content %}
+
+<div class="page-welcome">Generate PDF Reports</div>
+
+<div class="table-section" style="max-width: 600px">
+  <div class="table-head-row">
+    <span class="panel-title">Sales History Report</span>
+  </div>
+
+  <div class="panel-body" style="padding: 20px">
+    <form
+      id="reportForm"
+      action="{{ url_for('generate_pdf_report') }}"
+      method="POST"
+    >
+      <div class="mb-3">
+        <label style="color: #94a3b8; font-size: 12px; font-weight: 600"
+          >START DATE</label
+        >
+        <input
+          type="date"
+          name="start_date"
+          class="form-control"
+          required
+          style="
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+          "
+        />
+      </div>
+
+      <div class="mb-4">
+        <label style="color: #94a3b8; font-size: 12px; font-weight: 600"
+          >END DATE</label
+        >
+        <input
+          type="date"
+          name="end_date"
+          class="form-control"
+          required
+          style="
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+          "
+        />
+      </div>
+
+      <button
+        type="submit"
+        class="btn btn-primary"
+        style="
+          width: 100%;
+          background: #1a7a5e;
+          border: none;
+          border-radius: 8px;
+          padding: 10px;
+          font-weight: 600;
+        "
+      >
+        Generate & Download PDF
+      </button>
+    </form>
+  </div>
+</div>
+{% endblock %}

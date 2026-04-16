@@ -79,7 +79,13 @@
             >Stock Alerts</a
           >
         </li>
-        <li><a class="nav-link" href="#">Reports</a></li>
+        <li>
+          <a
+            class="nav-link {% if request.endpoint == 'reports_page' %}active{% endif %}"
+            href="{{ url_for('reports_page') }}"
+            >Reports</a
+          >
+        </li>
         <li><a class="nav-link" href="#">Settings</a></li>
       </ul>
 
